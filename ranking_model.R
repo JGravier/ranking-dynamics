@@ -8,7 +8,7 @@ library(nlstools) # for fit
 source("functions.R")
 set.seed(2123)
 #### ranking model: numeric VS theoretical ####
-init_size <- seq(1, 1000, 1)
+init_size <- seq(1, 200, 1)
 number_times <- seq(1, 500, 1)
 
 ### theoretical model
@@ -24,7 +24,8 @@ theoreticalmodel <- theoreticalmodel %>%
 base_model_f <- f_ranking_model(vector_entry = init_size, times = number_times, ps = 1, pd = 0, alpha = 0)
 
 # calculs of F:
-output <- f_calculus_F(vector_entry = init_size, times = number_times, list_entry = base_model_f)
+output <- f_calculus_F(vector_entry = init_size, list_entry = base_model_f, 
+                       timesT = length(number_times), N = length(init_size))
 
 # plot
 output %>%

@@ -3,3 +3,6 @@
 .Rproj.user
 .Rhistory
 *.Rproj
+data/FIDE_standard_compilations_Dahiya.parquet
+data/shanghai-world-university-ranking.csv
+data/TRADEVE_UrbanAreas_Data.xlsx

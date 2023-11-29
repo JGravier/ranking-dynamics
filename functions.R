@@ -155,7 +155,7 @@ f_ranking_model <- function(vector_entry, times, ps, pd, alpha) {
 #' @returns a tibble of two variables: N0/N and F
 #' @author Julie Gravier
 
-f_calculus_F <- function(vector_entry, times, list_entry){
+f_calculus_F <- function(vector_entry, list_entry, timesT, N){
   output_f <- tibble()
   for (i in 1:length(vector_entry)) {
     liste_vec <- vector()
@@ -171,11 +171,37 @@ f_calculus_F <- function(vector_entry, times, list_entry){
     output_f <- output_f %>%
       bind_rows(tibble(
         N0_N = i/length(vector_entry),
-        Fresult = sum(liste_vec, na.rm = TRUE)/length(times)
+        Fresult = sum(liste_vec, na.rm = TRUE)/timesT,
+        Fsum = sum(liste_vec, na.rm = TRUE)
       ))
   }
   return(output_f)
 }
 
+
+
+# reprendre
+f_calculus_F_data <- function(vector_entry, times, list_entry, N){
+  output_f <- tibble()
+  for (i in 1:length(vector_entry)) {
+    liste_vec <- vector()
+    # Each times: identification if items cross the N0/N border
+    for (t in seq(2, length(list_entry), 1)) {
+      # comparing list t and t-1
+      extract_differences <- list_entry[[t]][1:i] %in% list_entry[[t-1]][1:i] #
+      # count differences (when items == FALSE)
+      n_f <- length(extract_differences[extract_differences == FALSE])
+      liste_vec[t] <- n_f
+    }
+    # creation of output tibble
+    output_f <- output_f %>%
+      bind_rows(tibble(
+        N0_N = i/N,
+        Fsum = sum(liste_vec, na.rm = TRUE),
+        times = times
+      ))
+  }
+  return(output_f)
+}
 
 
