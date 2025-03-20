@@ -148,14 +148,22 @@ f_ranking_model <- function(vector_entry, times, ps, pd, alpha) {
   
 }
 
-#' @title calculus of F turnover
+#' @title calculus of F turnover in theoretical model, also named phi
 #' @param vector_entry the initial vector of items that will be re-rank
-#' @param times the vector of N iteration, a seq(1,N,1)
 #' @param list_entry the list of results of ranking model
 #' @returns a tibble of two variables: N0/N and F
-#' @author Julie Gravier
 
-f_calculus_F <- function(vector_entry, list_entry, timesT, N){
+f_calculus_F <- function(vector_entry, list_entry, N){
+  # compute all turnovers. Theoretically: sum F <=> T when the probability to jump elsewhere in the list = 1
+  vecdiff <- vector()
+  for (i in 2:(length(list_entry))) {
+    if (identical(list_entry[[i]], list_entry[[i-1]]) == FALSE) {
+      vecdiff[i] <- 1
+    }
+  }
+  sum_F <- sum(vecdiff, na.rm = TRUE)
+  
+  # creation of F turnover as the probability p = N0/N to cross the barrier N0/N
   output_f <- tibble()
   for (i in 1:length(vector_entry)) {
     liste_vec <- vector()
@@ -171,19 +179,24 @@ f_calculus_F <- function(vector_entry, list_entry, timesT, N){
     output_f <- output_f %>%
       bind_rows(tibble(
         N0_N = i/length(vector_entry),
-        Fresult = sum(liste_vec, na.rm = TRUE)/timesT,
-        Fsum = sum(liste_vec, na.rm = TRUE)
+        Fresult = sum(liste_vec, na.rm = TRUE)/sum_F
       ))
   }
   return(output_f)
 }
 
 
-
-# reprendre
-f_calculus_F_data <- function(vector_entry, times, list_entry, N){
+#' @title calculus of N barrier N0/N crossing in data (Fsum), also named phi sum
+#' @param vector_entry the initial vector of items that will be re-rank
+#' @param times N times of observation
+#' @param list_entry the list of results of ranking model
+#' @param N size of ranking list N
+#' @returns a tibble
+#' 
+f_calculus_F_data <- function(vector_entry, times, list_entry, N, vec_not_continuous = FALSE){
   output_f <- tibble()
   for (i in 1:length(vector_entry)) {
+    liste_vec_total <- vector()
     liste_vec <- vector()
     # Each times: identification if items cross the N0/N border
     for (t in seq(2, length(list_entry), 1)) {
@@ -192,12 +205,90 @@ f_calculus_F_data <- function(vector_entry, times, list_entry, N){
       # count differences (when items == FALSE)
       n_f <- length(extract_differences[extract_differences == FALSE])
       liste_vec[t] <- n_f
+      # total difference
+      if (length(list_entry[[t]]) == length(list_entry[[t-1]])) {
+        totdiff <- list_entry[[t]] == list_entry[[t-1]]
+      } else if (length(list_entry[[t]]) > length(list_entry[[t-1]])) {
+        long <- length(list_entry[[t-1]])
+        totdiff <- list_entry[[t]][1:long] == list_entry[[t-1]]
+      } else {
+        long <- length(list_entry[[t]])
+        totdiff <- list_entry[[t]] == list_entry[[t-1]][1:long]
+      }
+      ndiff <- length(totdiff[totdiff == FALSE])
+      liste_vec_total[t] <- ndiff
+    }
+    
+    # creation of output tibble
+    output_f <- output_f %>%
+      bind_rows(tibble(
+        N0_N = if(vec_not_continuous == TRUE){vector_entry[i]/N} else {i/N},
+        Fsum = sum(liste_vec, na.rm = TRUE),
+        Ftotdiff = sum(liste_vec_total, na.rm = TRUE),
+        Fresult = Fsum/Ftotdiff,
+        times = times
+      ))
+  }
+  return(output_f)
+}
+
+#' @title fit formula of phi with power law distribution
+#' @param N0_N probability p = N0/N
+#' @param N size of ranking list N
+#' @details
+#' Formula of F(p) is used to fit model with data via nlstools.
+#' \eqn{F(p) = p_s((1-p)p^{1-\alpha} + p(1-p^{1-\alpha})) + (1-p_s)p_d\frac{p^{-\alpha}}{N}
+#' 
+#' @author Marc Barthelemy and Julie Gravier
+formula_phi_asymetric <- as.formula(Fresult ~ ps * ( (N0_N^(1-alpha)) * (1-N0_N) + ( 1-N0_N^(1-alpha) ) * N0_N ) +
+                                    (1 - ps) * pd * N0_N^(-alpha) * (1/N) )
+
+#' @title fit formula of phi with exponential distribution
+#' @param N0_N probability p = N0/N
+#' @param N size of ranking list N
+#' @details
+#' Formula of F(p) is used to fit model with data via nlstools.
+#' 
+#' @author Marc Barthelemy and Julie Gravier
+formula_phi_asymetric_exponential <- as.formula(Fresult ~ ps * ((1-N0_N) * exp(-(1-N0_N)/(ro/N)) + N0_N*( 1- exp(-(1-N0_N)/(ro/N)) ) ) 
+                                                + (1-ps) * (pd/ro) * exp(-(1-N0_N)/(ro/N)) )
+
+
+#' @title fit formula of F (from Ft)
+#' @param N0_N probability p = N0/N
+#' @param vectorank cumsum de N0 en 1 -> N0
+#' @param N0 size of ranking list N0
+#' @details
+#' Formula is used to fit model with data via nlstools.
+#' \eqn{Ft = \frac{ps(1-p)}{N0}\sum{r^-\alpha} + pd(1-\frac{ps}{N0}\sum{r^-\alpha})
+#'  
+#' @author Marc Barthelemy and Julie Gravier
+formula_F_asymetric <- as.formula(Ft ~ (ps*(1 - N0_N))/N0 * (vectorank^-alpha) + 
+                                    pd*(1 - ps/N0 * (vectorank^-alpha)) )
+
+
+
+############################################### indices: Iniguez et al. 2022 ###################################################
+#' @title compute F
+#' @returns a tibble
+#' 
+f_calculus_Finiguez <- function(vector_entry, times, list_entry, N, vec_not_continuous = FALSE){
+  output_f <- tibble()
+  for (i in 1:length(vector_entry)) {
+    liste_vec <- vector()
+    # Each times: identification if items cross the N0/N border normalized by size N0
+    for (t in seq(2, length(list_entry), 1)) {
+      # comparing list t and t-1
+      extract_differences <- list_entry[[t]][1:i] %in% list_entry[[t-1]][1:i] #
+      # count differences (when items == FALSE)
+      n_f <- length(extract_differences[extract_differences == FALSE])/i
+      liste_vec[t] <- n_f
     }
     # creation of output tibble
     output_f <- output_f %>%
       bind_rows(tibble(
-        N0_N = i/N,
-        Fsum = sum(liste_vec, na.rm = TRUE),
+        N0_N = if(vec_not_continuous == TRUE){vector_entry[i]/N} else {i/N},
+        Fresult = sum(liste_vec, na.rm = TRUE)/(times-1),
         times = times
       ))
   }
@@ -205,3 +296,27 @@ f_calculus_F_data <- function(vector_entry, times, list_entry, N){
 }
 
 
+#' @title compute Flux Ft
+#' @returns a tibble
+#' 
+f_calculus_Ft <- function(vector_entry, times, list_entry, N, vec_not_continuous = FALSE){
+  output_f <- tibble()
+  for (i in 1:length(vector_entry)) {
+    liste_vec <- vector()
+    # Each times: identification if items cross the N0/N border normalized by size N0
+    for (t in seq(2, length(list_entry), 1)) {
+      # comparing list t and t-1
+      extract_differences <- list_entry[[t]][1:i] %in% list_entry[[t-1]][1:i] #
+      # count differences (when items == FALSE)
+      n_f <- length(extract_differences[extract_differences == FALSE])/i
+      # creation of output tibble
+      output_f <- output_f %>%
+        bind_rows(tibble(
+          N0_N = if(vec_not_continuous == TRUE){vector_entry[i]/N} else {i/N},
+          Ft = n_f,
+          times = t
+        ))
+    }
+  }
+  return(output_f)
+}
