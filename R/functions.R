@@ -1,83 +1,3 @@
-#' @title Overlapping
-#' @param study_list the initial list of tibbles of ranking
-#' @param Nzero is overlapping considering N in T or one/multiple N0 (default is TRUE)
-#' @param sequence_of_Nzero sequence of N0 size of lists (a number or a sequence)
-#' @returns a tibble of overlapping indices from T-Final with previous T
-
-f_overlapping <- function(study_list, Nzero = TRUE, sequence_of_Nzero) {
-  
-  # from T-Final to previous T
-  seq_reverse <- rev(seq(1, length(study_list), 1))
-  
-  # match T-Final with previous T
-  output_overlapping <- tibble()
-  
-  
-  # Default, N0 = TRUE
-  if (Nzero == TRUE) {
-    
-    # choice of a N0 sequence (one number or a sequence)
-    if (is.null(sequence_of_Nzero)) {
-      
-      print("Sequence of N0 should be non null")
-      
-    }
-    
-    else {
-      
-      for (i in 1:length(study_list)-1) {
-        
-        # compute overlapping for any N0 sequence
-        for (seqN0 in 1:length(sequence_of_Nzero)) {
-          # size of N0
-          size <- sequence_of_Nzero[seqN0]
-          
-          # compute overlapping
-          matching_vector <- match(x = study_list[[seq_reverse[1]]]$rowid[1:size], table = study_list[[seq_reverse[i+1]]]$rowid[1:size])
-          overlapping <- 1 - (sum(is.na(matching_vector))/length(matching_vector)) # sum of NA
-          
-          # create output tibble
-          output_overlapping <- output_overlapping %>%
-            bind_rows(
-              tibble(overlapping_index = overlapping,
-                     time_t_minus = i,
-                     time_t_reality = study_list[[seq_reverse[i+1]]]$date[1],
-                     Nzero_size = sequence_of_Nzero[seqN0])
-            )
-        }
-        
-      }
-      
-    }
-  }
-  
-  # when N0 = FALSE
-  else {
-    
-    for (i in 1:length(study_list)-1) {
-      # compute overlapping
-      matching_vector <- match(x = study_list[[seq_reverse[1]]]$rowid, table = study_list[[seq_reverse[i+1]]]$rowid)
-      overlapping <- 1 - (sum(is.na(matching_vector))/length(matching_vector)) # sum of NA
-      
-      # create output tibble
-      output_overlapping <- output_overlapping %>%
-        bind_rows(
-          tibble(overlapping_index = overlapping,
-                 time_t_minus = i,
-                 time_t_reality = study_list[[seq_reverse[i+1]]]$date[1])
-        )
-    }
-  }
-  
-  # output
-  if (Nzero == TRUE) {
-    return(output_overlapping %>% arrange(Nzero_size, desc(time_t_reality )))
-  } else {
-    return(output_overlapping)
-  }
-  
-}
-
 #' @title Ranking model
 #' @param vector_entry the initial vector of items that is re-rank
 #' @param times the vector of N iteration, a seq(1, N, 1)
@@ -345,6 +265,110 @@ formula_phi_asymetric_exponential <- as.formula(Fresult ~ ps * ((1-N0_N) * exp(-
 #' @author Marc Barthelemy and Julie Gravier
 formula_F_asymetric <- as.formula(Ft ~ (ps*(1 - N0_N))/N0 * (vectorank^-alpha) + 
                                     pd*(1 - ps/N0 * (vectorank^-alpha)) )
+
+
+#' @title Overlapping
+#' @param study_list the initial list of tibbles of ranking
+#' @param Nzero is overlapping considering N in T or one/multiple N0 (default is TRUE)
+#' @param sequence_of_Nzero sequence of N0 size of lists (a number or a sequence)
+#' @param frequence is TRUE (default) for overlapping frequency output
+#' @returns a tibble of overlapping indices from T-Final with previous T
+
+f_overlapping <- function(study_list, Nzero = TRUE, sequence_of_Nzero, frequence = TRUE) {
+  
+  # from T-Final to previous T
+  seq_reverse <- rev(seq(1, length(study_list), 1))
+  
+  # match T-Final with previous T
+  output_overlapping <- tibble()
+  
+  
+  # Default, N0 = TRUE
+  if (Nzero == TRUE) {
+    
+    # choice of a N0 sequence (one number or a sequence)
+    if (is.null(sequence_of_Nzero)) {
+      
+      print("Sequence of N0 should be non null")
+      
+    }
+    
+    else {
+      
+      for (i in 1:length(study_list)-1) {
+        
+        # compute overlapping for any N0 sequence
+        for (seqN0 in 1:length(sequence_of_Nzero)) {
+          # size of N0
+          size <- sequence_of_Nzero[seqN0]
+          
+          # compute overlapping
+          matching_vector <- match(x = study_list[[seq_reverse[1]]]$rowid[1:size], table = study_list[[seq_reverse[i+1]]]$rowid[1:size])
+          overlapping <- 1 - (sum(is.na(matching_vector))/length(matching_vector)) # sum of NA
+          overlappingnotfreq <- length(matching_vector) - sum(is.na(matching_vector))
+          
+          # create output tibble
+          if (frequence == TRUE) {
+            output_overlapping <- output_overlapping %>%
+              bind_rows(
+                tibble(overlapping_index = overlapping,
+                       time_t_minus = i,
+                       time_t_reality = study_list[[seq_reverse[i+1]]]$date[1],
+                       Nzero_size = sequence_of_Nzero[seqN0])
+              )
+          } else {
+            output_overlapping <- output_overlapping %>%
+              bind_rows(
+                tibble(overlapping_index = overlappingnotfreq,
+                       time_t_minus = i,
+                       time_t_reality = study_list[[seq_reverse[i+1]]]$date[1],
+                       Nzero_size = sequence_of_Nzero[seqN0])
+              )
+          }
+          
+        }
+        
+      }
+      
+    }
+  }
+  
+  # when N0 = FALSE
+  else {
+    
+    for (i in 1:length(study_list)-1) {
+      # compute overlapping
+      matching_vector <- match(x = study_list[[seq_reverse[1]]]$rowid, table = study_list[[seq_reverse[i+1]]]$rowid)
+      overlapping <- 1 - (sum(is.na(matching_vector))/length(matching_vector)) # sum of NA
+      overlappingnotfreq <- length(matching_vector) - sum(is.na(matching_vector))
+      
+      # create output tibble
+      if (frequence == TRUE) {
+        output_overlapping <- output_overlapping %>%
+          bind_rows(
+            tibble(overlapping_index = overlapping,
+                   time_t_minus = i,
+                   time_t_reality = study_list[[seq_reverse[i+1]]]$date[1])
+          )
+      } else {
+        output_overlapping <- output_overlapping %>%
+          bind_rows(
+            tibble(overlapping_index = overlappingnotfreq,
+                   time_t_minus = i,
+                   time_t_reality = study_list[[seq_reverse[i+1]]]$date[1])
+          )
+      }
+    }
+  }
+  
+  # output
+  if (Nzero == TRUE) {
+    return(output_overlapping %>% arrange(Nzero_size, desc(time_t_reality )))
+  } else {
+    return(output_overlapping)
+  }
+  
+}
 
 
 
