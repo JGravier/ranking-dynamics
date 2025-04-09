@@ -100,7 +100,7 @@ phi_result_tibble_chessfide <- f_calculus_F_data(vector_entry = seq(1, length(ve
                                                     list_entry = vector_of_ids_rank,
                                                     N = length(vector_of_ids_rank[[k]]), vec_not_continuous = TRUE) %>%
   mutate(N = length(vector_of_ids_rank[[k]])) %>%
-  mutate(name = 'chess FIDE')
+  mutate(name = 'chess: FIDE')
 
 # calculus of f
 f_result_tibble_chessfide <- f_calculus_Finiguez(vector_entry = seq(1, length(vector_of_ids_rank[[k]]), 100), 
@@ -108,7 +108,7 @@ f_result_tibble_chessfide <- f_calculus_Finiguez(vector_entry = seq(1, length(ve
                                                     list_entry = vector_of_ids_rank,
                                                     N = length(vector_of_ids_rank[[k]]), vec_not_continuous = TRUE) %>%
   mutate(N = length(vector_of_ids_rank[[k]])) %>%
-  mutate(name = 'chess FIDE')
+  mutate(name = 'chess: FIDE')
 
 
 ### chess players chessmetrics ####
@@ -134,7 +134,7 @@ phi_result_tibble_chessmetric <- f_calculus_F_data(vector_entry = seq(1, length(
                                                  list_entry = vector_of_ids_rank,
                                                  N = length(vector_of_ids_rank[[1]])) %>%
   mutate(N = length(vector_of_ids_rank[[1]])) %>%
-  mutate(name = 'chessmetric')
+  mutate(name = 'chess: chessmetrics')
 
 # calculus of f
 f_result_tibble_chessmetric <- f_calculus_Finiguez(vector_entry = seq(1, length(vector_of_ids_rank[[k]]), 1), 
@@ -142,7 +142,7 @@ f_result_tibble_chessmetric <- f_calculus_Finiguez(vector_entry = seq(1, length(
                                                  list_entry = vector_of_ids_rank,
                                                  N = length(vector_of_ids_rank[[1]])) %>%
   mutate(N = length(vector_of_ids_rank[[1]])) %>%
-  mutate(name = 'chessmetric')
+  mutate(name = 'chess: chessmetrics')
 
 
 ### soccer teams ####
@@ -180,7 +180,7 @@ f_result_tibble_soccer <- f_calculus_Finiguez(vector_entry = seq(1, length(vecto
   mutate(name = 'soccer teams')
 
 
-### Ploting result ###
+### Ploting result ####
 phi_data_plot <- phi_result_tibble_companies %>%
   bind_rows(phi_result_tibble_universities) %>%
   bind_rows(phi_result_tibble_chessfide) %>%
@@ -196,32 +196,17 @@ f_data_plot <- f_result_tibble_companies %>%
 # plot
 phi_data_plot %>%
   ggplot(aes(x=N0_N, y=Fresult, color = name, group=name)) +
-  geom_line(show.legend = FALSE, linewidth = 0.6) +
-  ggthemes::scale_color_colorblind() +
+  geom_line(show.legend = FALSE, linewidth = 0.8) +
   theme_bw() +
-  xlab(TeX(r"($N_{0}/N_{max}$)")) +
+  xlab(TeX(r"($W/N_0$)")) + # WARNING: new notation
   ylab(TeX(r"($\phi$)")) +
   f_data_plot %>%
   ggplot(aes(x=N0_N, y=Fresult, color = name)) +
-  geom_line(linewidth = 0.6) +
-  ggthemes::scale_color_colorblind() +
+  geom_line(linewidth = 0.8) +
   theme_bw() +
   theme(legend.title = element_blank()) +
-  xlab(TeX(r"($N_{0}/N_{max}$)")) +
+  xlab(TeX(r"($W/N_0$)")) + # WARNING: new notation
   ylab("F")
 
 ggsave(filename = "figures/phi_and_F_opensystems_N0_Nmax.pdf", width = 18, height = 10, dpi = 300, units = 'cm')
-
-
-f_data_plot %>%
-  ggplot(aes(x=N0_N, y=Fresult, color = name)) +
-  geom_line(linewidth = 0.6) +
-  ggthemes::scale_color_colorblind() +
-  theme_bw() +
-  theme(legend.title = element_blank(),
-        legend.position = c(0.85, 0.70),
-        legend.background = element_rect(fill = "white", color = "grey30"),) +
-  xlab(TeX(r"($N_{0}/N_{max}$)")) +
-  ylab("F")
-
 

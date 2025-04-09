@@ -13,16 +13,8 @@ source(file = "R/functions.R")
 dk_countries_tradeve <- read_csv(file = 'data/data-reorganized/european_cities.csv')
 
 ##### calculus of phi ####
-# list of countries studied
-liste_pays <- c("DE", "CZ", "ES", "FR", "UK", "IT", "NL", "PL", "RO")
-
 # diverse N0/N
 liste_tible_result <- dk_countries_tradeve %>%
-  filter(Country %in% liste_pays) %>%
-  select(Country, rang_1961:rang_2011) %>%
-  mutate(rowid = row_number()) %>%
-  pivot_longer(cols = rang_1961:rang_2011, names_to = "periods", values_to = "rank") %>%
-  arrange(rank, Country, periods) %>%
   group_by(Country) %>%
   group_split(Country)
 
@@ -91,14 +83,14 @@ liste_f_countries %>%
   geom_line(show.legend = FALSE, linewidth = 0.25) +
   ggthemes::scale_color_tableau(palette = 'Tableau 10') +
   theme_bw() +
-  xlab(TeX(r"($N_{0}/N$)")) +
+  xlab(TeX(r"($W/N_0$)")) +  # WARNING: new notation
   ylab(TeX(r"($\phi$)")) +
   liste_f_countries2 %>%
   ggplot(aes(x=N0_N, y=Fresult, color = Country)) +
   geom_line(linewidth = 0.25) +
   ggthemes::scale_color_tableau(palette = 'Tableau 10') +
   theme_bw() +
-  xlab(TeX(r"($N_{0}/N$)")) +
+  xlab(TeX(r"($W/N_0$)")) +
   ylab("F")
 
 ggsave(filename = "figures/comparing_F_cities.pdf", width = 18, height = 10, dpi = 300, units = 'cm')

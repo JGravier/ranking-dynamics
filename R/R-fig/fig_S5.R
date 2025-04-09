@@ -260,7 +260,7 @@ d <- f_result_tibble_fr %>%
         legend.position = c(0.15, 0.75),
         legend.background = element_rect(fill = "white", color = "grey30"),
         axis.text = element_text(size=12)) +
-  xlab(TeX(r"($N_{0}/N$)")) +
+  xlab(TeX(r"($W/N_0$)")) + # WARNING: new notation
   ylab(TeX(r"($\Phi$)"))
 
 ##### fit phi all t: power law ####

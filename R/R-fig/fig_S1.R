@@ -202,7 +202,7 @@ a <- data_plot %>%
   theme(legend.position = 'bottom') +
   scale_x_continuous(name = TeX(r"($t/T$)"), limits = c(0,1), breaks = c(0,0.5,1)) +
   ylab(TeX(r"($Ft$)")) + 
-  labs(title = "A", color = TeX(r"($N_0/N_{max}$)")) +
+  labs(title = "A", color = TeX(r"($W/N_0$)")) + # WARNING: new notation
   facet_wrap(~data, scales = 'free', ncol = 5)
 
 b <- data_plot %>%

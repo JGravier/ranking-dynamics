@@ -2,6 +2,22 @@ library(tidyverse)
 library(arrow)
 library(readxl)
 
+#### Download data from URLs ####
+options(timeout=1000)
+
+urls <- tibble(urls = c("https://nakala.fr/data/10.34847/nkl.be8a8v79.v2",
+                        "https://github.com/JGravier/FIDE/archive/refs/tags/v1.0.0.zip"),
+               path = c("TRADEVE", "FIDE"),
+               extension = c(".xlsx", ".zip"))
+
+for (i in 1:nrow(urls)) {
+  download.file(url = urls$urls[i], 
+                destfile = paste0("data/blobi/", urls$path[i], urls$extension[i])
+                )
+}
+
+
+
 #### European cities ####
 tradeve <- read_excel(path = "data/TRADEVE_UrbanAreas_Data.xlsx", sheet = "UrbanAreas_Data")
 

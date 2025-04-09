@@ -93,7 +93,7 @@ for (i in 1:length(fitting_liste_results)) {
 par(mfrow= c(3,3))
 
 for (i in 1:length(fitting_liste_results)) {
-  plot(liste_outputs[[i]]$N0_N, liste_outputs[[i]]$Fresult, pch=19, cex=0.5, xlab= TeX(r"($N_{0}/N$)"), ylab = TeX(r"($\Phi$)"),
+  plot(liste_outputs[[i]]$N0_N, liste_outputs[[i]]$Fresult, pch=19, cex=0.5, xlab= TeX(r"($W/N_0$)"), ylab = TeX(r"($\Phi$)"), # WARNING: new notation
        main=output_fit_results[i,]$Country)
   lines(liste_outputs[[i]]$N0_N, predict(fitting_liste_results[[i]]), col='red')
 }
