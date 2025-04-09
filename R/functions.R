@@ -1,3 +1,4 @@
+#### Model ####
 #' @title Ranking model
 #' @param vector_entry the initial vector of items that is re-rank
 #' @param times the vector of N iteration, a seq(1, N, 1)
@@ -148,10 +149,13 @@ f_ranking_model <- function(vector_entry, times, ps, pd, alpha) {
   
 }
 
-#' @title calculus of F turnover in theoretical model, also named phi
+
+#### Metrics ####
+#' @title calculus of F turnover in theoretical model, renamed phi
 #' @param vector_entry the initial vector of items that will be re-rank
 #' @param list_entry the list of results of ranking model
 #' @returns a tibble of two variables: N0/N and F
+#' @author Julie Gravier and Marc Barthelemy
 
 f_calculus_F <- function(vector_entry, list_entry, N){
   # compute all turnovers. Theoretically: sum F <=> T when the probability to jump elsewhere in the list = 1
@@ -186,13 +190,14 @@ f_calculus_F <- function(vector_entry, list_entry, N){
 }
 
 
-#' @title calculus of N barrier N0/N crossing in data (Fsum), also named phi sum
+#' @title calculus of N barrier N0/N crossing in data (Fsum), renamed phi sum
 #' @param vector_entry the initial vector of items that will be re-rank
 #' @param times N times of observation
 #' @param list_entry the list of results of ranking model
 #' @param N size of ranking list N
 #' @returns a tibble
-#' 
+#' @author Julie Gravier and Marc Barthelemy
+
 f_calculus_F_data <- function(vector_entry, times, list_entry, N, vec_not_continuous = FALSE){
   output_f <- tibble()
   for (i in 1:length(vector_entry)) {
@@ -232,40 +237,6 @@ f_calculus_F_data <- function(vector_entry, times, list_entry, N, vec_not_contin
   return(output_f)
 }
 
-#' @title fit formula of phi with power law distribution
-#' @param N0_N probability p = N0/N
-#' @param N size of ranking list N
-#' @details
-#' Formula of F(p) is used to fit model with data via nlstools.
-#' \eqn{F(p) = p_s((1-p)p^{1-\alpha} + p(1-p^{1-\alpha})) + (1-p_s)p_d\frac{p^{-\alpha}}{N}
-#' 
-#' @author Marc Barthelemy and Julie Gravier
-formula_phi_asymetric <- as.formula(Fresult ~ ps * ( (N0_N^(1-alpha)) * (1-N0_N) + ( 1-N0_N^(1-alpha) ) * N0_N ) +
-                                    (1 - ps) * pd * N0_N^(-alpha) * (1/N) )
-
-#' @title fit formula of phi with exponential distribution
-#' @param N0_N probability p = N0/N
-#' @param N size of ranking list N
-#' @details
-#' Formula of F(p) is used to fit model with data via nlstools.
-#' 
-#' @author Marc Barthelemy and Julie Gravier
-formula_phi_asymetric_exponential <- as.formula(Fresult ~ ps * ((1-N0_N) * exp(-(1-N0_N)/(ro/N)) + N0_N*( 1- exp(-(1-N0_N)/(ro/N)) ) ) 
-                                                + (1-ps) * (pd/ro) * exp(-(1-N0_N)/(ro/N)) )
-
-
-#' @title fit formula of F (from Ft)
-#' @param N0_N probability p = N0/N
-#' @param vectorank cumsum de N0 en 1 -> N0
-#' @param N0 size of ranking list N0
-#' @details
-#' Formula is used to fit model with data via nlstools.
-#' \eqn{Ft = \frac{ps(1-p)}{N0}\sum{r^-\alpha} + pd(1-\frac{ps}{N0}\sum{r^-\alpha})
-#'  
-#' @author Marc Barthelemy and Julie Gravier
-formula_F_asymetric <- as.formula(Ft ~ (ps*(1 - N0_N))/N0 * (vectorank^-alpha) + 
-                                    pd*(1 - ps/N0 * (vectorank^-alpha)) )
-
 
 #' @title Overlapping
 #' @param study_list the initial list of tibbles of ranking
@@ -273,6 +244,7 @@ formula_F_asymetric <- as.formula(Ft ~ (ps*(1 - N0_N))/N0 * (vectorank^-alpha) +
 #' @param sequence_of_Nzero sequence of N0 size of lists (a number or a sequence)
 #' @param frequence is TRUE (default) for overlapping frequency output
 #' @returns a tibble of overlapping indices from T-Final with previous T
+#' @author Julie Gravier
 
 f_overlapping <- function(study_list, Nzero = TRUE, sequence_of_Nzero, frequence = TRUE) {
   
@@ -371,10 +343,57 @@ f_overlapping <- function(study_list, Nzero = TRUE, sequence_of_Nzero, frequence
 }
 
 
+#### Fit formulas ####
 
-############################################### indices: Iniguez et al. 2022 ###################################################
+#' @title fit formula of phi with power law distribution
+#' @param N0_N probability p = N0/N
+#' @param N size of ranking list N
+#' @details
+#' Formula of F(p) is used to fit model with data via nlstools.
+#' \eqn{F(p) = p_s((1-p)p^{1-\alpha} + p(1-p^{1-\alpha})) + (1-p_s)p_d\frac{p^{-\alpha}}{N}}
+#' @author Marc Barthelemy and Julie Gravier
+
+formula_phi_asymetric <- as.formula(Fresult ~ ps * ( (N0_N^(1-alpha)) * (1-N0_N) + ( 1-N0_N^(1-alpha) ) * N0_N ) +
+                                    (1 - ps) * pd * N0_N^(-alpha) * (1/N) )
+
+#' @title fit formula of phi with exponential distribution
+#' @param N0_N probability p = N0/N
+#' @param N size of ranking list N
+#' @details
+#' Formula of F(p) is used to fit model with data via nlstools.
+#' @author Marc Barthelemy and Julie Gravier
+
+formula_phi_asymetric_exponential <- as.formula(Fresult ~ ps * ((1-N0_N) * exp(-(1-N0_N)/(ro/N)) + N0_N*( 1- exp(-(1-N0_N)/(ro/N)) ) ) 
+                                                + (1-ps) * (pd/ro) * exp(-(1-N0_N)/(ro/N)) )
+
+
+#' @title fit formula of F (from Ft)
+#' @param N0_N probability p = N0/N
+#' @param vectorank cumsum de N0 en 1 -> N0
+#' @param N0 size of ranking list N0
+#' @details
+#' Formula is used to fit model with data via nlstools.
+#' \eqn{Ft = \frac{ps(1-p)}{N0}\sum{r^-\alpha} + pd(1-\frac{ps}{N0}\sum{r^-\alpha})}
+#' @author Marc Barthelemy and Julie Gravier
+formula_F_asymetric <- as.formula(Ft ~ (ps*(1 - N0_N))/N0 * (vectorank^-alpha) + 
+                                    pd*(1 - ps/N0 * (vectorank^-alpha)) )
+
+
+#' @title fit formula of overlap decay
+#' @param t_T time t/T
+#' @details
+#' Formula of F(o) is used to fit model with data via nlstools.
+#' \eqn{F_0 = \exp(-a \times t/T)}
+#' @author Marc Barthelemy and Julie Gravier
+
+formula_overlapping <- as.formula(Overlapfit ~ exp(-a * t_T))
+
+
+
+#### Iniguez et al. 2022 metrcis ####
 #' @title compute F
 #' @returns a tibble
+#' @author adaptation of Iniguez et al. 2022 metrics (by Julie Gravier)
 #' 
 f_calculus_Finiguez <- function(vector_entry, times, list_entry, N, vec_not_continuous = FALSE){
   output_f <- tibble()
@@ -402,6 +421,7 @@ f_calculus_Finiguez <- function(vector_entry, times, list_entry, N, vec_not_cont
 
 #' @title compute Flux Ft
 #' @returns a tibble
+#' @author adaptation of Iniguez et al. 2022 metrics (by Julie Gravier)
 #' 
 f_calculus_Ft <- function(vector_entry, times, list_entry, N, vec_not_continuous = FALSE){
   output_f <- tibble()
